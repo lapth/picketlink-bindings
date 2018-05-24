@@ -87,6 +87,7 @@ import org.wildfly.extension.undertow.security.AccountImpl;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
+import javax.servlet.annotation.WebListener;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
@@ -121,6 +122,7 @@ import static org.picketlink.common.util.StringUtil.isNullOrEmpty;
  * @author Anil Saldhana
  * @since November 04, 2013
  */
+@WebListener
 public class SPFormAuthenticationMechanism extends ServletFormAuthenticationMechanism {
 
     private static final PicketLinkLogger logger = PicketLinkLoggerFactory.getLogger();
@@ -176,7 +178,7 @@ public class SPFormAuthenticationMechanism extends ServletFormAuthenticationMech
 
     protected PicketLinkAuditHelper auditHelper;
     protected TrustKeyManager keyManager;
-    protected IDPSSODescriptorType idpMetadata;
+    private IDPSSODescriptorType idpMetadata;
 
     public SPFormAuthenticationMechanism(FormParserFactory parserFactory, String name, String loginPage, String errorPage, ServletContext servletContext, SAMLConfigurationProvider configProvider, PicketLinkAuditHelper auditHelper) {
         super(parserFactory, name, loginPage, errorPage);
@@ -778,12 +780,34 @@ public class SPFormAuthenticationMechanism extends ServletFormAuthenticationMech
         return false;
     }
     protected void processConfiguration() {
+    	
+    	// Try to get from application configuration folder first
+    	// run your application with -DAPP_CONFIG=<config folder>
+    	String configFolder = SystemPropertiesUtil.getSystemProperty("APP_CONFIG", "");
+    	if (!isNullOrEmpty(configFolder)) {
+    		this.configFile = configFolder + java.io.File.separator + "picketlink.xml";
+    	} else {
+    		// Load CONFIG_FILE value from context-param of web.xml file
+    		// <context-param>
+            // 		<param-name>CONFIG_FILE</param-name>
+            // 		<param-value>app/config/path/picketlink.xml</param-value>
+    		// </context-param>
+    		String warConfigPath = servletContext.getInitParameter("CONFIG_FILE");
+    		if (!isNullOrEmpty(warConfigPath)) {
+    			this.configFile = warConfigPath;
+    		}
+    	}
+    	
         InputStream is = null;
 
         if (isNullOrEmpty(this.configFile)) {
+        	logger.info("There is no configured picketlink.xml file, loading from default one in war.");
+        	
             this.configFile = CONFIG_FILE_LOCATION;
             is = servletContext.getResourceAsStream(this.configFile);
         } else {
+        	logger.info("Loading picketlink.xml from: " + this.configFile);
+        	
             try {
                 is = new FileInputStream(this.configFile);
             } catch (FileNotFoundException e) {
