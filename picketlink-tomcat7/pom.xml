@@ -13,7 +13,7 @@
 	<properties>
 		<jboss-servlet-api_3.0_spec.version>1.0.0.Final</jboss-servlet-api_3.0_spec.version>
 		<jbossxacml.version>2.0.4</jbossxacml.version>
-		<catalina.version>7.0.50</catalina.version>
+		<catalina.version>7.0.100</catalina.version>
 	</properties>
 
 	<dependencies>
